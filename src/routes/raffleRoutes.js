@@ -4,11 +4,11 @@ import { createRaffle, reserveTicket } from '../controllers/raffleController.js'
 
 const router = express.Router();
 
-router.post('/create-raffle' , createRaffle);
+router.post('/', createRaffle); 
 
 router.post(
-    '/:raffleId/tickets',
-    auth,                 
+    '/:raffleId/tickets', 
+    auth, 
     reserveTicket
 );
 

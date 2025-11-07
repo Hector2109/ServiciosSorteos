@@ -1,5 +1,6 @@
-import Raffle from "../models/raffle";
+import Raffle from "../models/raffle.js";
 import Ticket from "../models/ticket.js";
+
 
 // Controlador para crear un nuevo sorteo
 export const createRaffle = async (req, res) => {
