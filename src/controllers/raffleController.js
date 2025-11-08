@@ -106,3 +106,34 @@ export const reserveTicket = async (req, res) => {
     }
 
 };
+
+// Controlador para obtener todos los sorteos activos (información resumida)
+export const getActiveRaffles = async (req, res) => {
+  try {
+    const raffles = await Raffle.findAll({
+      where: { estado: 'activo' },
+      attributes: ['id', 'nombre', 'premio', 'precioBoleto', 'urlImagen']
+    });
+    res.status(200).json(raffles);
+  } catch (error) {
+    console.error("Error al obtener los sorteos activos:", error);
+    res.status(500).json({ error: "Error al obtener los sorteos" });
+  }
+};
+
+// Controlador para obtener un sorteo por su ID (información completa)
+export const getRaffleById = async (req, res) => {
+  try {
+    const { raffleId } = req.params;
+    const raffle = await Raffle.findByPk(raffleId);
+
+    if (!raffle) {
+      return res.status(404).json({ error: "Sorteo no encontrado" });
+    }
+
+    res.status(200).json(raffle);
+  } catch (error) {
+    console.error("Error al obtener el sorteo:", error);
+    res.status(500).json({ error: "Error al obtener el sorteo" });
+  }
+};
