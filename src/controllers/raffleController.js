@@ -137,3 +137,27 @@ export const getRaffleById = async (req, res) => {
     res.status(500).json({ error: "Error al obtener el sorteo" });
   }
 };
+
+export const getTicketsByRaffleId = async (req, res) => {
+  try {
+    const { raffleId } = req.params;
+    const raffle = await Raffle.findByPk(raffleId);
+    
+    if (!raffle) {
+      return res.status(404).json({ error: "Sorteo no encontrado" });
+    }
+
+    const tickets = await Ticket.findAll({
+      where: {
+        raffleId: raffleId,
+      },
+      order: [["numeroBoleto", "ASC"]],
+    });
+
+    res.status(200).json(tickets);
+    
+  } catch (error) {
+    console.error("Error al obtener los boletos del sorteo:", error);
+    res.status(500).json({ error: "Error interno al obtener los boletos" });
+  }
+};
