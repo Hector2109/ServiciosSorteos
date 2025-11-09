@@ -112,7 +112,7 @@ export const getActiveRaffles = async (req, res) => {
   try {
     const raffles = await Raffle.findAll({
       where: { estado: 'activo' },
-      attributes: ['id', 'nombre', 'premio', 'precioBoleto', 'urlImagen']
+      attributes: ['id', 'nombre', 'premio', 'precioBoleto', 'urlImagen', 'estado']
     });
     res.status(200).json(raffles);
   } catch (error) {
