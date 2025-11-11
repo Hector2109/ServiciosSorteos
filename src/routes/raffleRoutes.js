@@ -33,7 +33,7 @@ router.get('/admin/inactive', auth, isSorteador, getInnactiveRaffles);
 router.get('/admin/ended', auth, isSorteador, getEndedRaffles);
 
 // Ruta para cambiar el estado
-router.put('/admin/state/:raffleId', auth, isSorteador, updateRaffleState); 
+router.put('/admin/state/:raffleId', auth, isSorteador, updateRaffleState);
 
 // Reservar boletos para un sorteo
 router.post(
