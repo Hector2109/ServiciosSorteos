@@ -23,7 +23,7 @@ router.get('/:raffleId', getRaffleById);
 router.get('/:raffleId/tickets', getTicketsByRaffleId);
 
 // Crear un nuevo sorteo
-router.post('/', createRaffle); 
+router.post('/', createRaffle, auth, isSorteador); 
 
 // Obtener sorteos inactivos
 router.get('/admin/inactive', auth, isSorteador, getInnactiveRaffles);
