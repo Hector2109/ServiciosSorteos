@@ -191,7 +191,7 @@ export const getEndedRaffles = async (req, res) => {
   }
 };
 
-export const setStateRaffle = async (raffleId, newState) => {
+export const updateRaffleState = async (raffleId, newState) => {
   try {
     const raffle = await Raffle.findByPk(raffleId);
     if (!raffle) {

@@ -8,7 +8,8 @@ import {
     getRaffleById,
     getTicketsByRaffleId,
     getEndedRaffles,
-    getInnactiveRaffles
+    getInnactiveRaffles,
+    updateRaffleState
 } from '../controllers/raffleController.js';
 
 const router = express.Router();
