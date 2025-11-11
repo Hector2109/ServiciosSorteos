@@ -5,7 +5,9 @@ import {
     reserveTicket,
     getActiveRaffles,
     getRaffleById,
-    getTicketsByRaffleId
+    getTicketsByRaffleId,
+    getEndedRaffles,
+    getInnactiveRaffles
 } from '../controllers/raffleController.js';
 
 const router = express.Router();
@@ -21,6 +23,12 @@ router.get('/:raffleId/tickets', getTicketsByRaffleId);
 
 // Crear un nuevo sorteo
 router.post('/', createRaffle); 
+
+// Obtener todos los sorteos inactivos
+router.get('/innactiveRaffles', getInnactiveRaffles);
+
+// Obtener todos los sorteos finalizados
+router.get('/finishedRaffles', getEndedRaffles);
 
 // Reservar boletos para un sorteo
 router.post(

@@ -138,6 +138,7 @@ export const getRaffleById = async (req, res) => {
   }
 };
 
+// Controlador para obtener todos los boletos de un sorteo específico
 export const getTicketsByRaffleId = async (req, res) => {
   try {
     const { raffleId } = req.params;
@@ -159,5 +160,33 @@ export const getTicketsByRaffleId = async (req, res) => {
   } catch (error) {
     console.error("Error al obtener los boletos del sorteo:", error);
     res.status(500).json({ error: "Error interno al obtener los boletos" });
+  }
+};
+
+// Controlador para obtener todos los sorteos inactivos (información para vista principal administrador)
+export const getInnactiveRaffles = async (req, res) => {
+  try {
+    const raffles = await Raffle.findAll({
+      where: { estado: 'inactivo' },
+      attributes: ['id', 'nombre', 'premio', 'precioBoleto', 'urlImagen', 'estado']
+    });
+    res.status(200).json(raffles);
+  } catch (error) {
+    console.error("Error al obtener los sorteos inactivos:", error);
+    res.status(500).json({ error: "Error al obtener los sorteos" });
+  }
+};
+
+// Controlador para obtener todos los sorteos finalizados (información para vista principal administrador)
+export const getEndedRaffles = async (req, res) => {
+  try {
+    const raffles = await Raffle.findAll({
+      where: { estado: 'finalizado' },
+      attributes: ['id', 'nombre', 'premio', 'precioBoleto', 'urlImagen', 'estado']
+    });
+    res.status(200).json(raffles);
+  } catch (error) {
+    console.error("Error al obtener los sorteos finalizados:", error);
+    res.status(500).json({ error: "Error al obtener los sorteos" });
   }
 };
