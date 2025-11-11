@@ -1,5 +1,6 @@
 import express from 'express';
 import { auth } from '../middleware/auth.js';
+import { isSorteador } from '../middleware/auth.js';
 import { 
     createRaffle, 
     reserveTicket,
@@ -24,11 +25,14 @@ router.get('/:raffleId/tickets', getTicketsByRaffleId);
 // Crear un nuevo sorteo
 router.post('/', createRaffle); 
 
-// Obtener todos los sorteos inactivos
-router.get('/innactiveRaffles', getInnactiveRaffles);
+// Obtener sorteos inactivos
+router.get('/admin/inactive', auth, isSorteador, getInnactiveRaffles);
 
-// Obtener todos los sorteos finalizados
-router.get('/finishedRaffles', getEndedRaffles);
+// Obtener sorteos finalizados
+router.get('/admin/ended', auth, isSorteador, getEndedRaffles);
+
+// Ruta para cambiar el estado
+router.put('/admin/state/:raffleId', auth, isSorteador, updateRaffleState); 
 
 // Reservar boletos para un sorteo
 router.post(

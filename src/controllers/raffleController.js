@@ -190,3 +190,18 @@ export const getEndedRaffles = async (req, res) => {
     res.status(500).json({ error: "Error al obtener los sorteos" });
   }
 };
+
+export const setStateRaffle = async (raffleId, newState) => {
+  try {
+    const raffle = await Raffle.findByPk(raffleId);
+    if (!raffle) {
+      throw new Error("Sorteo no encontrado");
+    } 
+    raffle.estado = newState;
+    await raffle.save();
+    return raffle;
+  } catch (error) {
+    console.error("Error al actualizar el estado del sorteo:", error);
+    throw error;
+  }
+};

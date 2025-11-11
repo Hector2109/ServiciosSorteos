@@ -13,6 +13,15 @@ export const auth = (req, res, next) => {
   }
 };
 
+// Middleware para verificar si el usuario tiene rol de "sorteador"
+export const isSorteador = (req, res, next) => {
+  if (!req.userId || req.userId.role !== 'sorteador') {
+    return res.status(403).json({ error: 'Acceso denegado. Se requiere rol de sorteador.' });
+  }
+  next();
+};
+
+
 export const isAdmin = (req, res, next) => {
   const adminKey = req.headers['x-admin-key'];
 
