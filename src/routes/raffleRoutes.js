@@ -27,10 +27,10 @@ router.get('/:raffleId/tickets', getTicketsByRaffleId);
 router.post('/', createRaffle, auth, isSorteador); 
 
 // Obtener sorteos inactivos
-router.get('/admin/inactive', auth, isSorteador, getInnactiveRaffles);
+router.get('/admin/inactive', getInnactiveRaffles, auth, isSorteador);
 
 // Obtener sorteos finalizados
-router.get('/admin/ended', auth, isSorteador, getEndedRaffles);
+router.get('/admin/ended', getEndedRaffles, auth, isSorteador);
 
 // Ruta para cambiar el estado
 router.put('/admin/state/:raffleId', updateRaffleState, auth, isSorteador);
