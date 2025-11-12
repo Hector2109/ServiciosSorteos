@@ -69,11 +69,9 @@ export const reserveTicket = async (req, res) => {
     const totalTicketsAfterReserve = existingTicketsCount + newTicketsCount;
 
     if (totalTicketsAfterReserve > limiteBoletosPorUsuario) {
-      return res
-        .status(400)
-        .json({
-          error: `Límite de ${limiteBoletosPorUsuario} boletos por usuario excedido`,
-        });
+      return res.status(400).json({
+        error: `Límite de ${limiteBoletosPorUsuario} boletos por usuario excedido`,
+      });
     }
 
     const reservedTickets = await Ticket.findAll({
@@ -96,12 +94,10 @@ export const reserveTicket = async (req, res) => {
     );
 
     if (ticketsToCreate.length === 0) {
-      return res
-        .status(400)
-        .json({
-          error: "Todos los números de boletos ya están reservados",
-          failedToReserve,
-        });
+      return res.status(400).json({
+        error: "Todos los números de boletos ya están reservados",
+        failedToReserve,
+      });
     }
 
     const ticketData = ticketsToCreate.map((num) => ({
@@ -228,42 +224,50 @@ export const getEndedRaffles = async (req, res) => {
   }
 };
 
-export const updateRaffleState = async (raffleId, newState) => {
+export const updateRaffleState = async (req, res) => {
   const { raffleId } = req.params;
   const { newState } = req.body;
-
-  if (!['activo', 'inactivo', 'finalizado'].includes(newState)) {
+  if (!["activo", "inactivo", "finalizado"].includes(newState)) {
     return res.status(400).json({ error: "Estado inválido" });
   }
-
   try {
-    const updateRaffle = await setStateRaffle(raffleId, newState);
-    res.status(200).json({ message: "Estado del sorteo actualizado", raffle: updateRaffle })
+    const updatedRaffle = await setStateRaffle(raffleId, newState);
+
+    res
+      .status(200)
+      .json({
+        message: "Estado del sorteo actualizado",
+        raffle: updatedRaffle,
+      });
+
+  } catch (error) {
+    console.error("Error al actualizar el estado del sorteo:", error);
+    res
+      .status(error.message.includes("Sorteo no encontrado") ? 404 : 500)
+      .json({
+        error: error.message || "Error al actualizar el estado del sorteo",
+      });
+  }
+};
+
+export const setStateRaffle = async (raffleId, newState) => {
+  try {
+    const idToFind = parseInt(raffleId, 10);
+
+    // Verificamos que el ID es un número válido
+    if (isNaN(idToFind)) {
+      throw new Error("ID de sorteo inválido.");
+    }
+
+    const raffle = await Raffle.findByPk(idToFind);
+    if (!raffle) {
+      throw new Error("Sorteo no encontrado");
+    }
+    raffle.estado = newState;
+    await raffle.save();
     return raffle;
   } catch (error) {
     console.error("Error al actualizar el estado del sorteo:", error);
     throw error;
   }
-};
-
-export const setStateRaffle = async (raffleId, newState) => {
-    try {
-        const idToFind = parseInt(raffleId, 10); 
-
-        // Verificamos que el ID es un número válido
-        if (isNaN(idToFind)) {
-            throw new Error("ID de sorteo inválido.");
-        }
-
-        const raffle = await Raffle.findByPk(idToFind);
-        if (!raffle) {
-          throw new Error("Sorteo no encontrado");
-        } 
-        raffle.estado = newState;
-        await raffle.save();
-        return raffle;
-      } catch (error) {
-        console.error("Error al actualizar el estado del sorteo:", error);
-        throw error;
-      }
 };
