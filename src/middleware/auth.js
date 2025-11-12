@@ -15,10 +15,13 @@ export const auth = (req, res, next) => {
 
 // Middleware para verificar si el usuario tiene rol de "sorteador"
 export const isSorteador = (req, res, next) => {
-  if (!req.userId || req.rol !== 'sorteador') {
-    return res.status(403).json({ error: 'Acceso denegado. Se requiere rol de sorteador.' });
-  }
-  next();
+    const rawRol = req.rol;
+    const normalizedRol = rawRol ? rawRol.toLowerCase().trim() : null; 
+
+    if (normalizedRol !== 'sorteador') {
+        return res.status(403).json({ error: 'Acceso denegado. Se requiere rol de sorteador.' });
+    }
+    next();
 };
 
 
