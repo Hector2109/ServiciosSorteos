@@ -1,43 +1,79 @@
 import Raffle from "../models/raffle.js";
 import Ticket from "../models/ticket.js";
 
+import multer from "multer";
+import axios from "axios";
+import FormData from "form-data";
+import dotenv from "dotenv";
+
+dotenv.config();
+
+const storage = multer.memoryStorage();
+const upload = multer({ storage: storage });
+
 // Controlador para crear un nuevo sorteo
-export const createRaffle = async (req, res) => {
-  try {
-    const {
-      nombre,
-      descripcion,
-      premio,
-      cantidadMaximaBoletos,
-      fechaInicialVentaBoletos,
-      fechaFinalVentaBoletos,
-      fechaRealizacion,
-      limiteBoletosPorUsuario,
-      precioBoleto,
-      urlImagen,
-    } = req.body;
+export const createRaffle = [
+  // 1. Middleware de Multer para capturar un solo archivo llamado 'urlImagen'.
+  upload.single('urlImagen'),
 
-    const newRaffle = await Raffle.create({
-      nombre,
-      descripcion,
-      premio,
-      cantidadMaximaBoletos,
-      fechaInicialVentaBoletos,
-      fechaFinalVentaBoletos,
-      fechaRealizacion,
-      limiteBoletosPorUsuario,
-      precioBoleto,
-      urlImagen,
-    });
+  // 2. Nuestra lógica principal del controlador.
+  async (req, res) => {
+    try {
+      // Verificamos si Multer nos entregó un archivo. Si no, es un error.
+      if (!req.file) {
+        return res.status(400).json({ error: "No se proporcionó ninguna imagen para el sorteo." });
+      }
 
-    res
-      .status(201)
-      .json({ message: "Sorteo creado exitosamente", raffle: newRaffle });
-  } catch (error) {
-    console.error("Error al crear el sorteo:", error);
-    res.status(500).json({ error: "Error al crear el sorteo" });
+      // 3. Preparamos la imagen para enviarla a la API de ImgBB.
+      const formData = new FormData();
+      formData.append('image', req.file.buffer.toString('base64'));
+
+      // 4. Hacemos la llamada a la API de ImgBB.
+      const imgBbResponse = await axios.post(
+        `https://api.imgbb.com/1/upload?key=${process.env.IMGBB_API_KEY}`,
+        formData,
+        { 
+          headers: formData.getHeaders()
+        }
+      );
+
+      // 5. De la respuesta de ImgBB, extraemos la URL de la imagen ya subida.
+      const imageUrl = imgBbResponse.data.data.display_url;
+
+      // 6. Extraemos los demás datos del sorteo, que ahora vienen en req.body.
+      const {
+        nombre,
+        descripcion,
+        premio,
+        cantidadMaximaBoletos,
+        fechaInicialVentaBoletos,
+        fechaFinalVentaBoletos,
+        fechaRealizacion,
+        limiteBoletosPorUsuario,
+        precioBoleto,
+      } = req.body;
+
+      // 7. Creamos el sorteo en nuestra base de datos, guardando la URL de ImgBB.
+      const newRaffle = await Raffle.create({
+        nombre,
+        descripcion,
+        premio,
+        cantidadMaximaBoletos,
+        fechaInicialVentaBoletos,
+        fechaFinalVentaBoletos,
+        fechaRealizacion,
+        limiteBoletosPorUsuario,
+        precioBoleto,
+        urlImagen: imageUrl, 
+      });
+
+      res.status(201).json({ message: "Sorteo creado exitosamente", raffle: newRaffle });
+    } catch (error) {
+      console.error("Error al crear el sorteo:", error.response ? error.response.data : error.message);
+      res.status(500).json({ error: "Error interno al crear el sorteo" });
+    }
   }
-};
+];
 
 // Controlador para crear un boleto asociado a un sorteo
 export const reserveTicket = async (req, res) => {
