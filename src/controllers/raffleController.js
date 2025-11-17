@@ -269,6 +269,7 @@ export const setStateRaffle = async (raffleId, newState) => {
   }
 };
 
+
 export const getRafflesByParticipant = async (req, res) => {
   const userId = req.userId;
 
@@ -278,8 +279,7 @@ export const getRafflesByParticipant = async (req, res) => {
         userId: userId,
       },
       // Traemos la información del sorteo asociado
-      include: [
-        {
+      include: [{
           model: Raffle,
           attributes: [
             "id",
@@ -288,19 +288,15 @@ export const getRafflesByParticipant = async (req, res) => {
             "precioBoleto",
             "urlImagen",
             "estado",
-          ],
-        },
-      ],
-      // Eliminar duplicados de sorteos
-      group: ["Ticket.id", "Raffle.id"],
-      raw: true,
-      nest: true, // Para obtener los objetos anidados limpios
+          ]
+        }],
     });
     const uniqueRafflesMap = new Map();
 
     tickets.forEach((ticket) => {
+      const raffle = ticket.Raffle.toJSON()
       // El objeto Raffle completo se encuentra en ticket.Raffle debido a nest: true
-      if (ticket.Raffle && !uniqueRafflesMap.has(ticket.Raffle.id)) {
+      if (raffle && !uniqueRafflesMap.has(raffle.id)) {
         uniqueRafflesMap.set(ticket.Raffle.id, ticket.Raffle);
       }
     });
