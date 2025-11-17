@@ -294,7 +294,6 @@ export const getRafflesByParticipant = async (req, res) => {
     const uniqueRafflesMap = new Map();
 
     tickets.forEach((ticket) => {
-      const raffle = ticket.Raffle.toJSON()
       // El objeto Raffle completo se encuentra en ticket.Raffle debido a nest: true
       if (raffle && !uniqueRafflesMap.has(raffle.id)) {
         uniqueRafflesMap.set(ticket.Raffle.id, ticket.Raffle);
