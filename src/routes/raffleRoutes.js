@@ -44,6 +44,6 @@ router.post(
 );
 
 // Obtner sorteos de un partcipante en específico
-router.get('/my-raffles', auth, getRafflesByParticipant);
+router.get('/my-raffles', getRafflesByParticipant, auth);
 
 export default router;
