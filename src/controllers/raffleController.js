@@ -269,44 +269,34 @@ export const setStateRaffle = async (raffleId, newState) => {
   }
 };
 
-
+// Controlador para obtener los sorteos en los que ha participado un usuario específico
 export const getRafflesByParticipant = async (req, res) => {
-  const userId = req.userId;
+    const userId = req.userId; // Obtenido del token
 
-  try {
-    const tickets = await Ticket.findAll({
-      where: {
-        userId: userId,
-      },
-      // Traemos la información del sorteo asociado
-      include: [{
-          model: Raffle,
-          attributes: [
-            "id",
-            "nombre",
-            "premio",
-            "precioBoleto",
-            "urlImagen",
-            "estado",
-          ]
-        }],
-    });
-    const uniqueRafflesMap = new Map();
+    try {
+        const raffles = await Raffle.findAll({
+            attributes: [
+                "id",
+                "nombre",
+                "premio",
+                "precioBoleto",
+                "urlImagen",
+                "estado",
+            ],
+            include: [{
+                model: Ticket,
+                where: { 
+                    userId: userId,
+                },
+                attributes: [] 
+            }],
+            distinct: true 
+        });
 
-    tickets.forEach((ticket) => {
-      // El objeto Raffle completo se encuentra en ticket.Raffle debido a nest: true
-      if (raffle && !uniqueRafflesMap.has(raffle.id)) {
-        uniqueRafflesMap.set(ticket.Raffle.id, ticket.Raffle);
-      }
-    });
+        res.status(200).json(raffles);
 
-    const uniqueRaffles = Array.from(uniqueRafflesMap.values());
-
-    res.status(200).json(uniqueRaffles);
-  } catch (error) {
-    console.error("Error al obtener los sorteos del participante:", error);
-    res
-      .status(500)
-      .json({ error: "Error al obtener los sorteos del participante" });
-  }
+    } catch (error) {
+        console.error("Error al obtener los sorteos del participante:", error);
+        res.status(500).json({ error: "Error al obtener los sorteos del participante" });
+    }
 };
