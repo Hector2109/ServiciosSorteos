@@ -233,13 +233,10 @@ export const updateRaffleState = async (req, res) => {
   try {
     const updatedRaffle = await setStateRaffle(raffleId, newState);
 
-    res
-      .status(200)
-      .json({
-        message: "Estado del sorteo actualizado",
-        raffle: updatedRaffle,
-      });
-
+    res.status(200).json({
+      message: "Estado del sorteo actualizado",
+      raffle: updatedRaffle,
+    });
   } catch (error) {
     console.error("Error al actualizar el estado del sorteo:", error);
     res
@@ -269,5 +266,52 @@ export const setStateRaffle = async (raffleId, newState) => {
   } catch (error) {
     console.error("Error al actualizar el estado del sorteo:", error);
     throw error;
+  }
+};
+
+export const getRafflesByParticipant = async (req, res) => {
+  const userId = req.userId;
+
+  try {
+    const tickets = await Ticket.findAll({
+      where: {
+        userId: userId,
+      },
+      // Traemos la información del sorteo asociado
+      include: [
+        {
+          model: Raffle,
+          attributes: [
+            "id",
+            "nombre",
+            "premio",
+            "precioBoleto",
+            "urlImagen",
+            "estado",
+          ],
+        },
+      ],
+      // Eliminar duplicados de sorteos
+      group: ["Ticket.id", "Raffle.id"],
+      raw: true,
+      nest: true, // Para obtener los objetos anidados limpios
+    });
+    const uniqueRafflesMap = new Map();
+
+    tickets.forEach((ticket) => {
+      // El objeto Raffle completo se encuentra en ticket.Raffle debido a nest: true
+      if (ticket.Raffle && !uniqueRafflesMap.has(ticket.Raffle.id)) {
+        uniqueRafflesMap.set(ticket.Raffle.id, ticket.Raffle);
+      }
+    });
+
+    const uniqueRaffles = Array.from(uniqueRafflesMap.values());
+
+    res.status(200).json(uniqueRaffles);
+  } catch (error) {
+    console.error("Error al obtener los sorteos del participante:", error);
+    res
+      .status(500)
+      .json({ error: "Error al obtener los sorteos del participante" });
   }
 };

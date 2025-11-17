@@ -9,7 +9,8 @@ import {
     getTicketsByRaffleId,
     getEndedRaffles,
     getInnactiveRaffles,
-    updateRaffleState
+    updateRaffleState,
+    getRafflesByParticipant
 } from '../controllers/raffleController.js';
 
 const router = express.Router();
@@ -41,5 +42,8 @@ router.post(
     auth, 
     reserveTicket
 );
+
+// Obtner sorteos de un partcipante en específico
+router.get('/my-raffles', auth, getRafflesByParticipant);
 
 export default router;
