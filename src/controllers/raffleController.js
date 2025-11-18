@@ -284,11 +284,11 @@ export const getRafflesByParticipant = async (req, res) => {
                 "estado",
             ],
             include: [{
-                model: Ticket,
-                where: { 
-                    userId: userId,
-                },
-                attributes: [] 
+              model: Ticket,
+              as: "tickets",
+              required: true,            
+              where: { userId },
+              attributes: []
             }],
             distinct: true 
         });
