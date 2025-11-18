@@ -10,7 +10,9 @@ import {
     getEndedRaffles,
     getInnactiveRaffles,
     updateRaffleState,
-    getRafflesByParticipant
+    getRafflesByParticipant,
+    getTicketsForRaffleByUser,
+    getApartedTicketsForRaffleByUser
 } from '../controllers/raffleController.js';
 
 const router = express.Router();
@@ -23,6 +25,12 @@ router.get('/my-raffles', auth, getRafflesByParticipant);
 
 // Crear un nuevo sorteo
 router.post('/', createRaffle, auth, isSorteador); 
+
+// Obtener boletos apartados y comprados para un sorteo específico por un usuario
+outer.get('/tickets/:raffleId/user', auth, getTicketsForRaffleByUser);
+
+// Obtener boletos apartados para un sorteo específico por un usuario
+router.get('/tickets/aparted/:raffleId/user', auth, getApartedTicketsForRaffleByUser);
 
 // Obtener sorteos inactivos
 router.get('/admin/inactive', getInnactiveRaffles, auth, isSorteador);

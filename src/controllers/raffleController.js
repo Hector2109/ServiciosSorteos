@@ -300,3 +300,36 @@ export const getRafflesByParticipant = async (req, res) => {
         res.status(500).json({ error: "Error al obtener los sorteos del participante" });
     }
 };
+
+// Controlador para obtener los boletos de un usuario específico en un sorteo específico
+export const getTicketsForRaffleByUser = async (req, res) => {
+  const userId = req.userId;
+  const { raffleId } = req.params;
+
+  try {
+    const tickets = await Ticket.findAll({
+      where: { userId, raffleId },
+      order: [["numeroBoleto", "ASC"]],
+    });
+    res.status(200).json(tickets);
+  } catch (error) {
+    console.error("Error al obtener los boletos del usuario para el sorteo:", error);
+    res.status(500).json({ error: "Error al obtener los boletos del usuario para el sorteo" });
+  }
+};
+
+// Controlador para obtener los boletos apartados de un usuario específico en un sorteo específico
+export const getApartedTicketsForRaffleByUser = async (req, res) => {
+  const userId = req.userId;
+  const { raffleId } = req.params;
+  try {
+    const tickets = await Ticket.findAll({
+      where: { userId, raffleId, estado: 'APARTADO' },
+      order: [["numeroBoleto", "ASC"]],
+    });
+    res.status(200).json(tickets);
+  } catch (error) {
+    console.error("Error al obtener los boletos apartados del usuario para el sorteo:", error);
+    res.status(500).json({ error: "Error al obtener los boletos apartados del usuario para el sorteo" });
+  }
+};
