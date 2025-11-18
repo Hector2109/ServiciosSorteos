@@ -1,5 +1,5 @@
-import Raffle from "./raffle";
-import Ticket from "./ticket";
+import Raffle from "./raffle.js";
+import Ticket from "./ticket.js";
 
 // Definir asociaciones
 Raffle.hasMany(Ticket, { foreignKey: 'raffleId', as: 'tickets' });
