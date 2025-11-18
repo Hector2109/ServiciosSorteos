@@ -320,11 +320,9 @@ export const getTicketsForRaffleByUser = async (req, res) => {
       "Error al obtener los boletos del usuario para el sorteo:",
       error
     );
-    res
-      .status(500)
-      .json({
-        error: "Error al obtener los boletos del usuario para el sorteo",
-      });
+    res.status(500).json({
+      error: "Error al obtener los boletos del usuario para el sorteo",
+    });
   }
 };
 
@@ -343,30 +341,73 @@ export const getApartedTicketsForRaffleByUser = async (req, res) => {
       "Error al obtener los boletos apartados del usuario para el sorteo:",
       error
     );
-    res
-      .status(500)
-      .json({
-        error:
-          "Error al obtener los boletos apartados del usuario para el sorteo",
-      });
+    res.status(500).json({
+      error:
+        "Error al obtener los boletos apartados del usuario para el sorteo",
+    });
   }
 };
 
-export const payApartedTicketsForRaffleByUser = async (req, res) => {
+export const payApartedTicketsForRaffleByUserOnline = async (req, res) => {
   const userId = req.userId;
   const { raffleId } = req.params;
-  const { tickets } = req.body; // lista de números de boleto
+  const { tickets, claveRastreo, monto } = req.body;
 
   if (!Array.isArray(tickets) || tickets.length === 0) {
+    return res.status(400).json({ error: "Debes especificar los tickets." });
+  }
+  
+  if (!claveRastreo) {
     return res
       .status(400)
-      .json({ error: "Debes especificar los números de los tickets." });
+      .json({
+        error: "La clave de rastreo es obligatoria para pagos en línea.",
+      });
   }
 
+  if (!monto) {
+    return res
+      .status(400)
+      .json({ error: "Debes especificar el monto total del pago." });
+  }
+
+  const t = await sequelize.transaction();
+
   try {
-    // Buscar tickets apartados que coincidan
-    const updated = await Ticket.update(
-      { estado: "COMPRADO" },
+    const apartados = await Ticket.findAll({
+      where: {
+        userId,
+        raffleId,
+        numeroBoleto: tickets,
+        estado: "APARTADO",
+      },
+      transaction: t,
+    });
+
+    if (apartados.length !== tickets.length) {
+      await t.rollback();
+      return res.status(404).json({
+        error:
+          "Algunos tickets no están apartados, no existen o ya fueron comprados.",
+      });
+    }
+
+    // Crear pago en línea
+    const payment = await Payment.create(
+      {
+        tipo: "LINEA",
+        claveRastreo,
+        monto,
+        estado: "COMPLETADO",
+      },
+      { transaction: t }
+    );
+
+    await Ticket.update(
+      {
+        estado: "COMPRADO",
+        paymentId: payment.id,
+      },
       {
         where: {
           userId,
@@ -374,18 +415,10 @@ export const payApartedTicketsForRaffleByUser = async (req, res) => {
           numeroBoleto: tickets,
           estado: "APARTADO",
         },
+        transaction: t,
       }
     );
 
-    const [rowsAffected] = updated;
-
-    if (rowsAffected === 0) {
-      return res.status(404).json({
-        error: "No se encontraron tickets apartados que coincidan.",
-      });
-    }
-
-    // Obtener los tickets ya actualizados para enviarlos completos
     const updatedTickets = await Ticket.findAll({
       where: {
         userId,
@@ -393,14 +426,20 @@ export const payApartedTicketsForRaffleByUser = async (req, res) => {
         numeroBoleto: tickets,
       },
       order: [["numeroBoleto", "ASC"]],
+      include: [{ model: Payment, as: "payment" }],
+      transaction: t,
     });
 
+    await t.commit();
+
     res.status(200).json({
-      message: "Tickets pagados correctamente",
+      message: "Pago en línea registrado correctamente",
+      payment,
       tickets: updatedTickets,
     });
   } catch (error) {
-    console.error("Error al pagar boletos:", error);
-    res.status(500).json({ error: "Error al pagar boletos apartados" });
+    console.error("Error al procesar pago en línea:", error);
+    await t.rollback();
+    res.status(500).json({ error: "Error al procesar el pago en línea" });
   }
 };
