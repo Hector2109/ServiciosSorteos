@@ -19,7 +19,7 @@ const router = express.Router();
 router.get('/', getActiveRaffles);
 
 // Obtner sorteos de un partcipante en específico
-router.get('/my-raffles', getRafflesByParticipant, auth);
+router.get('/my-raffles', auth, getRafflesByParticipant);
 
 // Crear un nuevo sorteo
 router.post('/', createRaffle, auth, isSorteador); 
