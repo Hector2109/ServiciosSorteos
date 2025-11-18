@@ -13,7 +13,7 @@ import {
     getRafflesByParticipant,
     getTicketsForRaffleByUser,
     getApartedTicketsForRaffleByUser,
-    payApartedTicketsForRaffleByUser
+    payApartedTicketsForRaffleByUserOnline
 } from '../controllers/raffleController.js';
 
 const router = express.Router();
@@ -34,7 +34,7 @@ router.get('/tickets/:raffleId/user', auth, getTicketsForRaffleByUser);
 router.get('/tickets/aparted/:raffleId/user', auth, getApartedTicketsForRaffleByUser);
 
 // Pagar boletos apartados para un sorteo específico por un usuario
-router.put('/tickets/pay/:raffleId/user', auth, payApartedTicketsForRaffleByUser);
+router.put('/tickets/pay/:raffleId/user', auth, payApartedTicketsForRaffleByUserOnline);
 
 // Obtener sorteos inactivos
 router.get('/admin/inactive', getInnactiveRaffles, auth, isSorteador);
