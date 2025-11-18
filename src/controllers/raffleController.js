@@ -271,34 +271,37 @@ export const setStateRaffle = async (raffleId, newState) => {
 
 // Controlador para obtener los sorteos en los que ha participado un usuario específico
 export const getRafflesByParticipant = async (req, res) => {
-    const userId = req.userId; // Obtenido del token
+  const userId = req.userId; // Obtenido del token
 
-    try {
-        const raffles = await Raffle.findAll({
-            attributes: [
-                "id",
-                "nombre",
-                "premio",
-                "precioBoleto",
-                "urlImagen",
-                "estado",
-            ],
-            include: [{
-              model: Ticket,
-              as: "tickets",
-              required: true,            
-              where: { userId },
-              attributes: []
-            }],
-            distinct: true 
-        });
+  try {
+    const raffles = await Raffle.findAll({
+      attributes: [
+        "id",
+        "nombre",
+        "premio",
+        "precioBoleto",
+        "urlImagen",
+        "estado",
+      ],
+      include: [
+        {
+          model: Ticket,
+          as: "tickets",
+          required: true,
+          where: { userId },
+          attributes: [],
+        },
+      ],
+      distinct: true,
+    });
 
-        res.status(200).json(raffles);
-
-    } catch (error) {
-        console.error("Error al obtener los sorteos del participante:", error);
-        res.status(500).json({ error: "Error al obtener los sorteos del participante" });
-    }
+    res.status(200).json(raffles);
+  } catch (error) {
+    console.error("Error al obtener los sorteos del participante:", error);
+    res
+      .status(500)
+      .json({ error: "Error al obtener los sorteos del participante" });
+  }
 };
 
 // Controlador para obtener los boletos de un usuario específico en un sorteo específico
@@ -313,8 +316,15 @@ export const getTicketsForRaffleByUser = async (req, res) => {
     });
     res.status(200).json(tickets);
   } catch (error) {
-    console.error("Error al obtener los boletos del usuario para el sorteo:", error);
-    res.status(500).json({ error: "Error al obtener los boletos del usuario para el sorteo" });
+    console.error(
+      "Error al obtener los boletos del usuario para el sorteo:",
+      error
+    );
+    res
+      .status(500)
+      .json({
+        error: "Error al obtener los boletos del usuario para el sorteo",
+      });
   }
 };
 
@@ -324,12 +334,73 @@ export const getApartedTicketsForRaffleByUser = async (req, res) => {
   const { raffleId } = req.params;
   try {
     const tickets = await Ticket.findAll({
-      where: { userId, raffleId, estado: 'APARTADO' },
+      where: { userId, raffleId, estado: "APARTADO" },
       order: [["numeroBoleto", "ASC"]],
     });
     res.status(200).json(tickets);
   } catch (error) {
-    console.error("Error al obtener los boletos apartados del usuario para el sorteo:", error);
-    res.status(500).json({ error: "Error al obtener los boletos apartados del usuario para el sorteo" });
+    console.error(
+      "Error al obtener los boletos apartados del usuario para el sorteo:",
+      error
+    );
+    res
+      .status(500)
+      .json({
+        error:
+          "Error al obtener los boletos apartados del usuario para el sorteo",
+      });
+  }
+};
+
+export const payApartedTicketsForRaffleByUser = async (req, res) => {
+  const userId = req.userId;
+  const { raffleId } = req.params;
+  const { tickets } = req.body; // lista de números de boleto
+
+  if (!Array.isArray(tickets) || tickets.length === 0) {
+    return res
+      .status(400)
+      .json({ error: "Debes especificar los números de los tickets." });
+  }
+
+  try {
+    // Buscar tickets apartados que coincidan
+    const updated = await Ticket.update(
+      { estado: "COMPRADO" },
+      {
+        where: {
+          userId,
+          raffleId,
+          numeroBoleto: tickets,
+          estado: "APARTADO",
+        },
+      }
+    );
+
+    const [rowsAffected] = updated;
+
+    if (rowsAffected === 0) {
+      return res.status(404).json({
+        error: "No se encontraron tickets apartados que coincidan.",
+      });
+    }
+
+    // Obtener los tickets ya actualizados para enviarlos completos
+    const updatedTickets = await Ticket.findAll({
+      where: {
+        userId,
+        raffleId,
+        numeroBoleto: tickets,
+      },
+      order: [["numeroBoleto", "ASC"]],
+    });
+
+    res.status(200).json({
+      message: "Tickets pagados correctamente",
+      tickets: updatedTickets,
+    });
+  } catch (error) {
+    console.error("Error al pagar boletos:", error);
+    res.status(500).json({ error: "Error al pagar boletos apartados" });
   }
 };
