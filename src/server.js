@@ -2,6 +2,7 @@ import app from './app.js';
 import sequelize from './config/db.js';
 import Raffle from './models/raffle.js'; 
 import Ticket from './models/ticket.js'; 
+import './models/associations.js';
 
 
 const PORT = process.env.PORT || 3000;
