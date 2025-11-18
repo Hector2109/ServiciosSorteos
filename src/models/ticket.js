@@ -8,7 +8,8 @@ const ticket = sequelize.define('Ticket', {
     // Llave foránea al usuario
     userId: { type: DataTypes.INTEGER, allowNull: false },
     numeroBoleto: { type: DataTypes.INTEGER, allowNull: false, unique: false },
-    estado: { type: DataTypes.ENUM('APARTADO', 'COMPRADO'), allowNull: false, defaultValue: 'APARTADO' }
+    estado: { type: DataTypes.ENUM('APARTADO', 'COMPRADO'), allowNull: false, defaultValue: 'APARTADO' },
+    paymentId: { type: DataTypes.INTEGER, allowNull: true }
 });
 
 export default ticket;
