@@ -27,7 +27,7 @@ router.get('/my-raffles', auth, getRafflesByParticipant);
 router.post('/', createRaffle, auth, isSorteador); 
 
 // Obtener boletos apartados y comprados para un sorteo específico por un usuario
-outer.get('/tickets/:raffleId/user', auth, getTicketsForRaffleByUser);
+router.get('/tickets/:raffleId/user', auth, getTicketsForRaffleByUser);
 
 // Obtener boletos apartados para un sorteo específico por un usuario
 router.get('/tickets/aparted/:raffleId/user', auth, getApartedTicketsForRaffleByUser);
