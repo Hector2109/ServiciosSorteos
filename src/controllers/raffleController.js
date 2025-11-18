@@ -1,5 +1,7 @@
 import Raffle from "../models/raffle.js";
 import Ticket from "../models/ticket.js";
+import Payment from "../models/payment.js";
+import sequelize from "../config/db.js";
 
 // Controlador para crear un nuevo sorteo
 export const createRaffle = async (req, res) => {
@@ -356,7 +358,7 @@ export const payApartedTicketsForRaffleByUserOnline = async (req, res) => {
   if (!Array.isArray(tickets) || tickets.length === 0) {
     return res.status(400).json({ error: "Debes especificar los tickets." });
   }
-  
+
   if (!claveRastreo) {
     return res
       .status(400)
