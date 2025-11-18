@@ -18,11 +18,8 @@ const router = express.Router();
 // Obtener todos los sorteos activos
 router.get('/', getActiveRaffles);
 
-// Obtener un sorteo específico por ID
-router.get('/:raffleId', getRaffleById);
-
-// Obtendrá todos los boletos para un sorteo específico
-router.get('/:raffleId/tickets', getTicketsByRaffleId);
+// Obtner sorteos de un partcipante en específico
+router.get('/my-raffles', getRafflesByParticipant, auth);
 
 // Crear un nuevo sorteo
 router.post('/', createRaffle, auth, isSorteador); 
@@ -32,6 +29,12 @@ router.get('/admin/inactive', getInnactiveRaffles, auth, isSorteador);
 
 // Obtener sorteos finalizados
 router.get('/admin/ended', getEndedRaffles, auth, isSorteador);
+
+// Obtener un sorteo específico por ID
+router.get('/:raffleId', getRaffleById);
+
+// Obtendrá todos los boletos para un sorteo específico
+router.get('/:raffleId/tickets', getTicketsByRaffleId);
 
 // Ruta para cambiar el estado
 router.put('/admin/state/:raffleId', updateRaffleState, auth, isSorteador);
@@ -43,7 +46,5 @@ router.post(
     reserveTicket
 );
 
-// Obtner sorteos de un partcipante en específico
-router.get('/my-raffles', getRafflesByParticipant, auth);
 
 export default router;
