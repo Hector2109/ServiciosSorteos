@@ -2,6 +2,7 @@ import app from './app.js';
 import sequelize from './config/db.js';
 import Raffle from './models/raffle.js'; 
 import Ticket from './models/ticket.js'; 
+import Payment from './models/payment.js';
 import './models/associations.js';
 
 
