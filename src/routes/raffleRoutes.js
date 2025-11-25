@@ -10,6 +10,7 @@ import {
     getEndedRaffles,
     getInnactiveRaffles,
     updateRaffleState,
+    updateRaffle,
     getRafflesByParticipant,
     getTicketsForRaffleByUser,
     getApartedTicketsForRaffleByUser,
@@ -21,7 +22,7 @@ const router = express.Router();
 // Obtener todos los sorteos activos
 router.get('/', getActiveRaffles);
 
-// Obtner sorteos de un partcipante en específico
+// Obtener sorteos de un participante en específico
 router.get('/my-raffles', auth, getRafflesByParticipant);
 
 // Crear un nuevo sorteo
@@ -50,6 +51,9 @@ router.get('/:raffleId/tickets', getTicketsByRaffleId);
 
 // Ruta para cambiar el estado
 router.put('/admin/state/:raffleId', updateRaffleState, auth, isSorteador);
+
+//Ruta para actualizar un sorteo
+router.put('/admin/update/:raffleId', auth, updateRaffle, isSorteador);
 
 // Reservar boletos para un sorteo
 router.post(

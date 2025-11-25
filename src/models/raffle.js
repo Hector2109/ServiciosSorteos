@@ -14,6 +14,7 @@ const Raffle = sequelize.define('Raffle', {
     fechaFinalVentaBoletos: { type: DataTypes.DATE, allowNull: false },
     fechaRealizacion: { type: DataTypes.DATE, allowNull: false },
     limiteBoletosPorUsuario: { type: DataTypes.INTEGER, allowNull: false, defaultValue: 10 },
+    //Limite boletos por usuario si deberia poder ser null y no deberia tener un valor por defecto
     precioBoleto: { type: DataTypes.DECIMAL(10, 2), allowNull: false },
     urlImagen: { type: DataTypes.STRING, allowNull: false },
 });

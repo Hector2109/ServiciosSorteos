@@ -249,6 +249,125 @@ export const updateRaffleState = async (req, res) => {
   }
 };
 
+export const updateRaffle = async (req, res) => {
+  const { raffleId } = req.params;
+  const dataToUpdate = req.body;
+
+  // Limpiar los datos para la DB, eliminando solo campos que no se enviaron
+  const cleanData = {};
+  for (const key in dataToUpdate) {
+    const value = dataToUpdate[key];
+
+    // Ignorar si el valor es null, undefined, o una cadena vacía
+    if (value !== null && value !== undefined && value !== "") {
+      cleanData[key] = value;
+    }
+  }
+
+  // Verificar si hay datos válidos para actualizar
+  if (Object.keys(cleanData).length === 0) {
+    return res.status(400).json({
+      error: "No se proporcionaron datos válidos para actualizar el sorteo."
+    });
+  }
+
+  try {
+
+    // Obtener el sorteo actual para realizar las validaciones de fecha
+    const idToFind = parseInt(raffleId, 10);
+    if (isNaN(idToFind)) {
+      return res.status(400).json({ error: "ID de sorteo inválido." });
+    }
+
+    const existingRaffle = await Raffle.findByPk(idToFind);
+
+    if (!existingRaffle) {
+      return res.status(404).json({ error: "Sorteo no encontrado" });
+    }
+
+    // REALIZAR LAS VALIDACIONES DE LÓGICA DE NEGOCIO (Fechas, límites, etc.)
+
+    //Verificar que el estado sea valido si existe en los datos a actualizar
+    const newState = cleanData.estado;
+    if (newState !== undefined && !["activo", "inactivo", "finalizado"].includes(newState)) {
+      return res.status(400).json({ error: "Estado inválido" });
+    }
+
+    const creationDate = existingRaffle.fechaCreacion;
+
+    // Validamos que limiteBoletosPorUsuario sea un número positivo
+    if (cleanData.limiteBoletosPorUsuario !== undefined && (typeof cleanData.limiteBoletosPorUsuario !== 'number' || cleanData.limiteBoletosPorUsuario < 1)) {
+      return res.status(400).json({ error: "El límite de boletos por usuario debe ser un número positivo (mayor o igual a 1)." });
+    }
+
+    // Preparar fechas para validación: Usar valor nuevo si existe, sino el valor actual
+    const newFechaInicial = cleanData.fechaInicialVentaBoletos ? new Date(cleanData.fechaInicialVentaBoletos) : existingRaffle.fechaInicialVentaBoletos;
+    const newFechaFinal = cleanData.fechaFinalVentaBoletos ? new Date(cleanData.fechaFinalVentaBoletos) : existingRaffle.fechaFinalVentaBoletos;
+    const newFechaRealizacion = cleanData.fechaRealizacion ? new Date(cleanData.fechaRealizacion) : existingRaffle.fechaRealizacion;
+
+    // Validar fechaInicialVentaBoletos
+    if (cleanData.fechaInicialVentaBoletos) {
+      if (newFechaInicial >= newFechaFinal) {
+        return res.status(400).json({ error: "La fecha inicial de venta debe ser estrictamente anterior a la fecha final de venta." });
+      }
+      if (newFechaInicial < creationDate) {
+        return res.status(400).json({ error: "La fecha inicial de venta no puede ser anterior a la fecha de creación." });
+      }
+    }
+    // Validar fechaFinalVentaBoletos
+    if (cleanData.fechaFinalVentaBoletos) {
+      if (newFechaFinal >= newFechaRealizacion) {
+        return res.status(400).json({ error: "La fecha final de venta debe ser estrictamente anterior a la fecha de realización." });
+      }
+    }
+
+    // Continúa con la actualización de los demás campos
+    const updatedRaffle = await updateRaffleData(raffleId, cleanData);
+
+    // Respuesta exitosa
+    res.status(200).json({
+      message: "Sorteo actualizado exitosamente",
+      raffle: updatedRaffle,
+    });
+
+  } catch (error) {
+    // Manejo de errores de la función de servicio o de la BD
+    console.error("Error al actualizar el sorteo:", error);
+    res.status(500).json({
+      error: error.message || "Error interno al actualizar el sorteo",
+    });
+  }
+};
+
+export const updateRaffleData = async (raffleId, cleanData) => {
+  try {
+    const idToFind = parseInt(raffleId, 10);
+
+    if (isNaN(idToFind)) {
+      throw new Error("ID de sorteo inválido.");
+    }
+
+    // Ejecutar la actualización en la base de datos
+    await Raffle.update(
+      cleanData,
+      {
+        where: { id: idToFind },
+      }
+    );
+    const updatedRaffle = await Raffle.findByPk(idToFind);
+
+    if (!updatedRaffle) {
+      return null;
+    }
+
+    return updatedRaffle;
+
+  } catch (error) {
+    console.error("Error al actualizar los datos del sorteo:", error);
+    throw error;
+  }
+};
+
 export const setStateRaffle = async (raffleId, newState) => {
   try {
     const idToFind = parseInt(raffleId, 10);
