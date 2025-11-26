@@ -15,10 +15,14 @@ import {
     getTicketsForRaffleByUser,
     getApartedTicketsForRaffleByUser,
     payApartedTicketsForRaffleByUserOnline,
-    registerTransferPaymentForTickets
+    registerTransferPaymentForTickets,
+    getRafflesSummary
 } from '../controllers/raffleController.js';
 
 const router = express.Router();
+
+// Obtener el resumen de un sorteo
+router.get('/summary/:raffleId', getRafflesSummary, auth, isSorteador);
 
 // Obtener todos los sorteos activos
 router.get('/', getActiveRaffles);

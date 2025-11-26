@@ -160,6 +160,56 @@ export const getRaffleById = async (req, res) => {
   }
 };
 
+// Controlador para obtener el resumen de un sorteo específico
+export const getRafflesSummary = async (req, res) => {
+    try {
+        const { raffleId } = req.params;
+        const raffle = await Raffle.findByPk(raffleId);
+
+        if (!raffle) {
+            return res.status(404).json({ error: "Sorteo no encontrado" });
+        }
+
+        // --- Lógica para obtener los boletos (Tickets) ---
+        const tickets = await Ticket.findAll({
+            where: {
+                raffleId: raffleId,
+            },
+            order: [["numeroBoleto", "ASC"]],
+        });
+        
+        // --- Cálculo de Estadísticas (Añadido para completar el summary) ---
+        
+        const boletosComprados = tickets.filter(
+            (ticket) => ticket.estado === "COMPRADO"
+        ).length;
+        const boletosApartados = tickets.filter(
+            (ticket) => ticket.estado === "APARTADO"
+        ).length;
+        
+        const boletosEnVenta = boletosComprados + boletosApartados;
+        const totalBoletosDisponibles = raffle.cantidadMaximaBoletos - boletosEnVenta;
+
+        const montoRecaudado = boletosComprados * raffle.precioBoleto;
+        const montoPorRecaudar = boletosApartados * raffle.precioBoleto;
+
+        res.status(200).json({
+            raffle: raffle.toJSON(),
+            estadisticas: {
+                boletosComprados,
+                boletosApartados,
+                totalBoletosDisponibles: Math.max(0, totalBoletosDisponibles),
+                montoRecaudado,
+                montoPorRecaudar,
+            }
+        });
+
+    } catch (error) {
+        console.error("Error al obtener el resumen del sorteo:", error);
+        res.status(500).json({ error: "Error interno del servidor al obtener el resumen del sorteo" });
+    }
+};
+
 // Controlador para obtener todos los boletos de un sorteo específico
 export const getTicketsByRaffleId = async (req, res) => {
   try {
