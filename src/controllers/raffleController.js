@@ -564,3 +564,93 @@ export const payApartedTicketsForRaffleByUserOnline = async (req, res) => {
     res.status(500).json({ error: "Error al procesar el pago en línea" });
   }
 };
+
+
+
+export const registerTransferPaymentForTickets = async (req, res) => {
+  const userId = req.userId;
+  const { raffleId } = req.params;
+  const { tickets, voucher, monto } = req.body;
+
+  if (!Array.isArray(tickets) || tickets.length === 0) {
+    return res.status(400).json({ error: "Debes especificar los tickets." });
+  }
+
+  if (!voucher) {
+    return res
+      .status(400)
+      .json({ error: "El voucher es obligatorio para pagos por transferencia." });
+  }
+
+  if (!monto) {
+    return res
+      .status(400)
+      .json({ error: "Debes especificar el monto total del pago." });
+  }
+
+  const t = await sequelize.transaction();
+  try {
+    const apartados = await Ticket.findAll({
+      where: {
+        userId,
+        raffleId,
+        numeroBoleto: tickets,
+        estado: "APARTADO",
+      },
+      transaction: t,
+    });
+
+    if (apartados.length !== tickets.length) {
+      await t.rollback();
+      return res.status(404).json({
+        error:
+          "Algunos tickets no están apartados, no existen o ya fueron comprados.",
+      });
+    }
+    // Crear pago por transferencia
+    const payment = await Payment.create(
+      {
+        tipo: "TRANSFERENCIA",
+        voucher,
+        monto,
+        estado: "PENDIENTE",
+      },
+      { transaction: t }
+    );
+    await Ticket.update(
+      {
+        paymentId: payment.id,
+      },
+      {
+        where: {
+          userId,
+          raffleId,
+          numeroBoleto: tickets,
+          estado: "APARTADO",
+        },
+        transaction: t,
+      }
+    );
+    const updatedTickets = await Ticket.findAll({
+      where: {
+        userId,
+        raffleId,
+        numeroBoleto: tickets,
+      },
+      order: [["numeroBoleto", "ASC"]],
+      include: [{ model: Payment, as: "payment" }],
+      transaction: t,
+    });
+    await t.commit();
+    res.status(200).json({
+      message: "Pago por transferencia registrado correctamente",
+      payment,
+      tickets: updatedTickets,
+    });
+  } catch (error) {
+    console.error("Error al registrar pago por transferencia:", error);
+    await t.rollback();
+    res.status(500).json({ error: "Error al registrar el pago por transferencia" });
+  }
+};
+
