@@ -2,6 +2,7 @@ import Raffle from "../models/raffle.js";
 import Ticket from "../models/ticket.js";
 import Payment from "../models/payment.js";
 import sequelize from "../config/db.js";
+import { Op } from "sequelize";
 
 // Controlador para crear un nuevo sorteo
 export const createRaffle = async (req, res) => {
@@ -162,52 +163,56 @@ export const getRaffleById = async (req, res) => {
 
 // Controlador para obtener el resumen de un sorteo específico
 export const getRafflesSummary = async (req, res) => {
-    try {
-        const { raffleId } = req.params;
-        const raffle = await Raffle.findByPk(raffleId);
+  try {
+    const { raffleId } = req.params;
+    const raffle = await Raffle.findByPk(raffleId);
 
-        if (!raffle) {
-            return res.status(404).json({ error: "Sorteo no encontrado" });
-        }
-
-        // --- Lógica para obtener los boletos (Tickets) ---
-        const tickets = await Ticket.findAll({
-            where: {
-                raffleId: raffleId,
-            },
-            order: [["numeroBoleto", "ASC"]],
-        });
-        
-        // --- Cálculo de Estadísticas (Añadido para completar el summary) ---
-        
-        const boletosComprados = tickets.filter(
-            (ticket) => ticket.estado === "COMPRADO"
-        ).length;
-        const boletosApartados = tickets.filter(
-            (ticket) => ticket.estado === "APARTADO"
-        ).length;
-        
-        const boletosEnVenta = boletosComprados + boletosApartados;
-        const totalBoletosDisponibles = raffle.cantidadMaximaBoletos - boletosEnVenta;
-
-        const montoRecaudado = boletosComprados * raffle.precioBoleto;
-        const montoPorRecaudar = boletosApartados * raffle.precioBoleto;
-
-        res.status(200).json({
-            raffle: raffle.toJSON(),
-            estadisticas: {
-                boletosComprados,
-                boletosApartados,
-                totalBoletosDisponibles: Math.max(0, totalBoletosDisponibles),
-                montoRecaudado,
-                montoPorRecaudar,
-            }
-        });
-
-    } catch (error) {
-        console.error("Error al obtener el resumen del sorteo:", error);
-        res.status(500).json({ error: "Error interno del servidor al obtener el resumen del sorteo" });
+    if (!raffle) {
+      return res.status(404).json({ error: "Sorteo no encontrado" });
     }
+
+    // --- Lógica para obtener los boletos (Tickets) ---
+    const tickets = await Ticket.findAll({
+      where: {
+        raffleId: raffleId,
+      },
+      order: [["numeroBoleto", "ASC"]],
+    });
+
+    // --- Cálculo de Estadísticas (Añadido para completar el summary) ---
+
+    const boletosComprados = tickets.filter(
+      (ticket) => ticket.estado === "COMPRADO"
+    ).length;
+    const boletosApartados = tickets.filter(
+      (ticket) => ticket.estado === "APARTADO"
+    ).length;
+
+    const boletosEnVenta = boletosComprados + boletosApartados;
+    const totalBoletosDisponibles =
+      raffle.cantidadMaximaBoletos - boletosEnVenta;
+
+    const montoRecaudado = boletosComprados * raffle.precioBoleto;
+    const montoPorRecaudar = boletosApartados * raffle.precioBoleto;
+
+    res.status(200).json({
+      raffle: raffle.toJSON(),
+      estadisticas: {
+        boletosComprados,
+        boletosApartados,
+        totalBoletosDisponibles: Math.max(0, totalBoletosDisponibles),
+        montoRecaudado,
+        montoPorRecaudar,
+      },
+    });
+  } catch (error) {
+    console.error("Error al obtener el resumen del sorteo:", error);
+    res
+      .status(500)
+      .json({
+        error: "Error interno del servidor al obtener el resumen del sorteo",
+      });
+  }
 };
 
 // Controlador para obtener todos los boletos de un sorteo específico
@@ -317,12 +322,11 @@ export const updateRaffle = async (req, res) => {
   // Verificar si hay datos válidos para actualizar
   if (Object.keys(cleanData).length === 0) {
     return res.status(400).json({
-      error: "No se proporcionaron datos válidos para actualizar el sorteo."
+      error: "No se proporcionaron datos válidos para actualizar el sorteo.",
     });
   }
 
   try {
-
     // Obtener el sorteo actual para realizar las validaciones de fecha
     const idToFind = parseInt(raffleId, 10);
     if (isNaN(idToFind)) {
@@ -339,35 +343,68 @@ export const updateRaffle = async (req, res) => {
 
     //Verificar que el estado sea valido si existe en los datos a actualizar
     const newState = cleanData.estado;
-    if (newState !== undefined && !["activo", "inactivo", "finalizado"].includes(newState)) {
+    if (
+      newState !== undefined &&
+      !["activo", "inactivo", "finalizado"].includes(newState)
+    ) {
       return res.status(400).json({ error: "Estado inválido" });
     }
 
     const creationDate = existingRaffle.fechaCreacion;
 
     // Validamos que limiteBoletosPorUsuario sea un número positivo
-    if (cleanData.limiteBoletosPorUsuario !== undefined && (typeof cleanData.limiteBoletosPorUsuario !== 'number' || cleanData.limiteBoletosPorUsuario < 1)) {
-      return res.status(400).json({ error: "El límite de boletos por usuario debe ser un número positivo (mayor o igual a 1)." });
+    if (
+      cleanData.limiteBoletosPorUsuario !== undefined &&
+      (typeof cleanData.limiteBoletosPorUsuario !== "number" ||
+        cleanData.limiteBoletosPorUsuario < 1)
+    ) {
+      return res
+        .status(400)
+        .json({
+          error:
+            "El límite de boletos por usuario debe ser un número positivo (mayor o igual a 1).",
+        });
     }
 
     // Preparar fechas para validación: Usar valor nuevo si existe, sino el valor actual
-    const newFechaInicial = cleanData.fechaInicialVentaBoletos ? new Date(cleanData.fechaInicialVentaBoletos) : existingRaffle.fechaInicialVentaBoletos;
-    const newFechaFinal = cleanData.fechaFinalVentaBoletos ? new Date(cleanData.fechaFinalVentaBoletos) : existingRaffle.fechaFinalVentaBoletos;
-    const newFechaRealizacion = cleanData.fechaRealizacion ? new Date(cleanData.fechaRealizacion) : existingRaffle.fechaRealizacion;
+    const newFechaInicial = cleanData.fechaInicialVentaBoletos
+      ? new Date(cleanData.fechaInicialVentaBoletos)
+      : existingRaffle.fechaInicialVentaBoletos;
+    const newFechaFinal = cleanData.fechaFinalVentaBoletos
+      ? new Date(cleanData.fechaFinalVentaBoletos)
+      : existingRaffle.fechaFinalVentaBoletos;
+    const newFechaRealizacion = cleanData.fechaRealizacion
+      ? new Date(cleanData.fechaRealizacion)
+      : existingRaffle.fechaRealizacion;
 
     // Validar fechaInicialVentaBoletos
     if (cleanData.fechaInicialVentaBoletos) {
       if (newFechaInicial >= newFechaFinal) {
-        return res.status(400).json({ error: "La fecha inicial de venta debe ser estrictamente anterior a la fecha final de venta." });
+        return res
+          .status(400)
+          .json({
+            error:
+              "La fecha inicial de venta debe ser estrictamente anterior a la fecha final de venta.",
+          });
       }
       if (newFechaInicial < creationDate) {
-        return res.status(400).json({ error: "La fecha inicial de venta no puede ser anterior a la fecha de creación." });
+        return res
+          .status(400)
+          .json({
+            error:
+              "La fecha inicial de venta no puede ser anterior a la fecha de creación.",
+          });
       }
     }
     // Validar fechaFinalVentaBoletos
     if (cleanData.fechaFinalVentaBoletos) {
       if (newFechaFinal >= newFechaRealizacion) {
-        return res.status(400).json({ error: "La fecha final de venta debe ser estrictamente anterior a la fecha de realización." });
+        return res
+          .status(400)
+          .json({
+            error:
+              "La fecha final de venta debe ser estrictamente anterior a la fecha de realización.",
+          });
       }
     }
 
@@ -379,7 +416,6 @@ export const updateRaffle = async (req, res) => {
       message: "Sorteo actualizado exitosamente",
       raffle: updatedRaffle,
     });
-
   } catch (error) {
     // Manejo de errores de la función de servicio o de la BD
     console.error("Error al actualizar el sorteo:", error);
@@ -398,12 +434,9 @@ export const updateRaffleData = async (raffleId, cleanData) => {
     }
 
     // Ejecutar la actualización en la base de datos
-    await Raffle.update(
-      cleanData,
-      {
-        where: { id: idToFind },
-      }
-    );
+    await Raffle.update(cleanData, {
+      where: { id: idToFind },
+    });
     const updatedRaffle = await Raffle.findByPk(idToFind);
 
     if (!updatedRaffle) {
@@ -411,7 +444,6 @@ export const updateRaffleData = async (raffleId, cleanData) => {
     }
 
     return updatedRaffle;
-
   } catch (error) {
     console.error("Error al actualizar los datos del sorteo:", error);
     throw error;
@@ -501,11 +533,35 @@ export const getTicketsForRaffleByUser = async (req, res) => {
 export const getApartedTicketsForRaffleByUser = async (req, res) => {
   const userId = req.userId;
   const { raffleId } = req.params;
+
   try {
     const tickets = await Ticket.findAll({
-      where: { userId, raffleId, estado: "APARTADO" },
+      where: {
+        userId,
+        raffleId,
+        estado: "APARTADO",
+
+        // Filtrar boletos
+        [Op.or]: [
+          { paymentId: null },                          // Sin pago
+          { '$payment.estado$': { [Op.not]: "COMPLETADO" } } // Pago no aprobado
+        ]
+      },
+      include: [
+        {
+          model: Payment,
+          as: "payment",
+          required: false,
+          attributes: [
+            "id",
+            "tipo",
+            "estado",
+          ]
+        }
+      ],
       order: [["numeroBoleto", "ASC"]],
     });
+
     res.status(200).json(tickets);
   } catch (error) {
     console.error(
@@ -513,8 +569,7 @@ export const getApartedTicketsForRaffleByUser = async (req, res) => {
       error
     );
     res.status(500).json({
-      error:
-        "Error al obtener los boletos apartados del usuario para el sorteo",
+      error: "Error al obtener los boletos apartados del usuario para el sorteo",
     });
   }
 };
@@ -529,11 +584,9 @@ export const payApartedTicketsForRaffleByUserOnline = async (req, res) => {
   }
 
   if (!claveRastreo) {
-    return res
-      .status(400)
-      .json({
-        error: "La clave de rastreo es obligatoria para pagos en línea.",
-      });
+    return res.status(400).json({
+      error: "La clave de rastreo es obligatoria para pagos en línea.",
+    });
   }
 
   if (!monto) {
@@ -615,8 +668,6 @@ export const payApartedTicketsForRaffleByUserOnline = async (req, res) => {
   }
 };
 
-
-
 export const registerTransferPaymentForTickets = async (req, res) => {
   const userId = req.userId;
   const { raffleId } = req.params;
@@ -629,7 +680,9 @@ export const registerTransferPaymentForTickets = async (req, res) => {
   if (!voucher) {
     return res
       .status(400)
-      .json({ error: "El voucher es obligatorio para pagos por transferencia." });
+      .json({
+        error: "El voucher es obligatorio para pagos por transferencia.",
+      });
   }
 
   if (!monto) {
@@ -700,7 +753,8 @@ export const registerTransferPaymentForTickets = async (req, res) => {
   } catch (error) {
     console.error("Error al registrar pago por transferencia:", error);
     await t.rollback();
-    res.status(500).json({ error: "Error al registrar el pago por transferencia" });
+    res
+      .status(500)
+      .json({ error: "Error al registrar el pago por transferencia" });
   }
 };
-
