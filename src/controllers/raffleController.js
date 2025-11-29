@@ -780,10 +780,60 @@ export const getPaymentsForRaffle = async (req, res) => {
     });
 
     res.status(200).json(payments);
-
   } catch (error) {
     console.error("Error al obtener pagos:", error);
     res.status(500).json({ error: "Error al obtener pagos." });
   }
 };
 
+export const getPaymentsDetails = async (req, res) => {
+  const userId = req.userId;
+  const { paymentId } = req.params;
+
+  if (!userId) {
+    return res.status(400).json({ error: "Usuario inválido." });
+  }
+  if (!paymentId) {
+    return res.status(400).json({ error: "Pago inválido." });
+  }
+  try {
+    const payment = await Payment.findOne({
+      where: { id: paymentId },
+      include: [
+        {
+          model: Ticket,
+          as: "tickets",
+          attributes: ["id", "numeroBoleto", "raffleId", "userId", "estado"],
+          include: [
+            {
+              model: User,
+              as: "user",
+              attributes: ["nombre"],
+            },
+          ],
+        },
+      ],
+    });
+
+    if (!payment) {
+      return res.status(404).json({ error: "Pago no encontrado." });
+    }
+
+    // Obtener sorteo una sola vez
+    const raffleId = payment.tickets[0]?.raffleId;
+    const raffle = await Raffle.findByPk(raffleId, {
+      attributes: ["nombre", "precioBoleto"],
+    });
+
+    // Respuesta final sin duplicación
+    return res.json({
+      ...payment.toJSON(),
+      raffle,
+    });
+  } catch (error) {
+    console.error("Error al obtener detalles del pago:", error);
+    return res
+      .status(500)
+      .json({ error: "Error al obtener detalles del pago." });
+  }
+};

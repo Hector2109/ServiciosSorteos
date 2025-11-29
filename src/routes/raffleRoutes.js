@@ -17,7 +17,8 @@ import {
     payApartedTicketsForRaffleByUserOnline,
     registerTransferPaymentForTickets,
     getRafflesSummary,
-    getPaymentsForRaffle
+    getPaymentsForRaffle,
+    getPaymentsDetails
 } from '../controllers/raffleController.js';
 
 const router = express.Router();
@@ -27,6 +28,9 @@ router.get('/summary/:raffleId', getRafflesSummary, auth, isSorteador);
 
 // Obtener los pagos realizados para un sorteo específico
 router.get('/payments/:raffleId', auth, getPaymentsForRaffle);
+
+// Obtener los detalles de los pagos para un sorteo específico
+router.get('/payments/details/:paymentId', auth, getPaymentsDetails);
 
 // Obtener sorteos de un participante en específico
 router.get('/my-raffles', auth, getRafflesByParticipant);
