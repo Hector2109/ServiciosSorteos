@@ -11,10 +11,8 @@ const PORT = process.env.PORT || 3000;
 sequelize.authenticate()
   .then(() => {
     console.log('Conectado a PostgreSQL');
-    return sequelize.sync({ alter: true }); // Crea o actualiza tablas para Sorteo y Boleto
   })
   .then(() => {
-    console.log('Modelos sincronizados con la BD');
     app.listen(PORT, () => {
       console.log(`Servidor de Sorteos corriendo en el puerto ${PORT}`);
     });

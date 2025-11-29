@@ -1,6 +1,7 @@
 import Raffle from "../models/raffle.js";
 import Ticket from "../models/ticket.js";
 import Payment from "../models/payment.js";
+import User from "../models/userLite.js";
 import sequelize from "../config/db.js";
 import { Op } from "sequelize";
 
@@ -207,11 +208,9 @@ export const getRafflesSummary = async (req, res) => {
     });
   } catch (error) {
     console.error("Error al obtener el resumen del sorteo:", error);
-    res
-      .status(500)
-      .json({
-        error: "Error interno del servidor al obtener el resumen del sorteo",
-      });
+    res.status(500).json({
+      error: "Error interno del servidor al obtener el resumen del sorteo",
+    });
   }
 };
 
@@ -358,12 +357,10 @@ export const updateRaffle = async (req, res) => {
       (typeof cleanData.limiteBoletosPorUsuario !== "number" ||
         cleanData.limiteBoletosPorUsuario < 1)
     ) {
-      return res
-        .status(400)
-        .json({
-          error:
-            "El límite de boletos por usuario debe ser un número positivo (mayor o igual a 1).",
-        });
+      return res.status(400).json({
+        error:
+          "El límite de boletos por usuario debe ser un número positivo (mayor o igual a 1).",
+      });
     }
 
     // Preparar fechas para validación: Usar valor nuevo si existe, sino el valor actual
@@ -380,31 +377,25 @@ export const updateRaffle = async (req, res) => {
     // Validar fechaInicialVentaBoletos
     if (cleanData.fechaInicialVentaBoletos) {
       if (newFechaInicial >= newFechaFinal) {
-        return res
-          .status(400)
-          .json({
-            error:
-              "La fecha inicial de venta debe ser estrictamente anterior a la fecha final de venta.",
-          });
+        return res.status(400).json({
+          error:
+            "La fecha inicial de venta debe ser estrictamente anterior a la fecha final de venta.",
+        });
       }
       if (newFechaInicial < creationDate) {
-        return res
-          .status(400)
-          .json({
-            error:
-              "La fecha inicial de venta no puede ser anterior a la fecha de creación.",
-          });
+        return res.status(400).json({
+          error:
+            "La fecha inicial de venta no puede ser anterior a la fecha de creación.",
+        });
       }
     }
     // Validar fechaFinalVentaBoletos
     if (cleanData.fechaFinalVentaBoletos) {
       if (newFechaFinal >= newFechaRealizacion) {
-        return res
-          .status(400)
-          .json({
-            error:
-              "La fecha final de venta debe ser estrictamente anterior a la fecha de realización.",
-          });
+        return res.status(400).json({
+          error:
+            "La fecha final de venta debe ser estrictamente anterior a la fecha de realización.",
+        });
       }
     }
 
@@ -543,21 +534,17 @@ export const getApartedTicketsForRaffleByUser = async (req, res) => {
 
         // Filtrar boletos
         [Op.or]: [
-          { paymentId: null },                          // Sin pago
-          { '$payment.estado$': { [Op.not]: "COMPLETADO" } } // Pago no aprobado
-        ]
+          { paymentId: null }, // Sin pago
+          { "$payment.estado$": { [Op.not]: "COMPLETADO" } }, // Pago no aprobado
+        ],
       },
       include: [
         {
           model: Payment,
           as: "payment",
           required: false,
-          attributes: [
-            "id",
-            "tipo",
-            "estado",
-          ]
-        }
+          attributes: ["id", "tipo", "estado"],
+        },
       ],
       order: [["numeroBoleto", "ASC"]],
     });
@@ -569,7 +556,8 @@ export const getApartedTicketsForRaffleByUser = async (req, res) => {
       error
     );
     res.status(500).json({
-      error: "Error al obtener los boletos apartados del usuario para el sorteo",
+      error:
+        "Error al obtener los boletos apartados del usuario para el sorteo",
     });
   }
 };
@@ -678,11 +666,9 @@ export const registerTransferPaymentForTickets = async (req, res) => {
   }
 
   if (!voucher) {
-    return res
-      .status(400)
-      .json({
-        error: "El voucher es obligatorio para pagos por transferencia.",
-      });
+    return res.status(400).json({
+      error: "El voucher es obligatorio para pagos por transferencia.",
+    });
   }
 
   if (!monto) {
@@ -758,3 +744,46 @@ export const registerTransferPaymentForTickets = async (req, res) => {
       .json({ error: "Error al registrar el pago por transferencia" });
   }
 };
+
+export const getPaymentsForRaffle = async (req, res) => {
+  const userId = req.userId;
+  const { raffleId } = req.params;
+
+  if (!userId) {
+    return res.status(400).json({ error: "Usuario inválido." });
+  }
+  if (!raffleId) {
+    return res.status(400).json({ error: "Sorteo inválido." });
+  }
+
+  try {
+    const payments = await Payment.findAll({
+      distinct: true,
+      attributes: ["id", "tipo", "estado", "createdAt"],
+      include: [
+        {
+          model: Ticket,
+          as: "tickets",
+          required: true,
+          where: { raffleId },
+          attributes: ["id"],
+          include: [
+            {
+              model: User,
+              as: "user",
+              attributes: ["nombre"],
+            },
+          ],
+        },
+      ],
+      order: [["createdAt", "DESC"]],
+    });
+
+    res.status(200).json(payments);
+
+  } catch (error) {
+    console.error("Error al obtener pagos:", error);
+    res.status(500).json({ error: "Error al obtener pagos." });
+  }
+};
+

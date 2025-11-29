@@ -16,7 +16,8 @@ import {
     getApartedTicketsForRaffleByUser,
     payApartedTicketsForRaffleByUserOnline,
     registerTransferPaymentForTickets,
-    getRafflesSummary
+    getRafflesSummary,
+    getPaymentsForRaffle
 } from '../controllers/raffleController.js';
 
 const router = express.Router();
@@ -24,14 +25,11 @@ const router = express.Router();
 // Obtener el resumen de un sorteo
 router.get('/summary/:raffleId', getRafflesSummary, auth, isSorteador);
 
-// Obtener todos los sorteos activos
-router.get('/', getActiveRaffles);
+// Obtener los pagos realizados para un sorteo específico
+router.get('/payments/:raffleId', auth, getPaymentsForRaffle);
 
 // Obtener sorteos de un participante en específico
 router.get('/my-raffles', auth, getRafflesByParticipant);
-
-// Crear un nuevo sorteo
-router.post('/', createRaffle, auth, isSorteador); 
 
 // Obtener boletos apartados y comprados para un sorteo específico por un usuario
 router.get('/tickets/:raffleId/user', auth, getTicketsForRaffleByUser);
@@ -45,23 +43,31 @@ router.put('/tickets/pay/:raffleId', auth, payApartedTicketsForRaffleByUserOnlin
 // Registrar transacción de pago para boletos apartados
 router.put('/tickets/pay/:raffleId/transaction', auth, registerTransferPaymentForTickets);
 
+// Obtendrá todos los boletos para un sorteo específico
+router.get('/:raffleId/tickets', getTicketsByRaffleId);
+
+
+
 // Obtener sorteos inactivos
 router.get('/admin/inactive', getInnactiveRaffles, auth, isSorteador);
 
 // Obtener sorteos finalizados
 router.get('/admin/ended', getEndedRaffles, auth, isSorteador);
 
-// Obtener un sorteo específico por ID
-router.get('/:raffleId', getRaffleById);
-
-// Obtendrá todos los boletos para un sorteo específico
-router.get('/:raffleId/tickets', getTicketsByRaffleId);
-
 // Ruta para cambiar el estado
 router.put('/admin/state/:raffleId', updateRaffleState, auth, isSorteador);
 
 //Ruta para actualizar un sorteo
 router.put('/admin/update/:raffleId', auth, updateRaffle, isSorteador);
+
+
+
+
+// Obtener todos los sorteos activos
+router.get('/', getActiveRaffles);
+
+// Crear un nuevo sorteo
+router.post('/', createRaffle, auth, isSorteador); 
 
 // Reservar boletos para un sorteo
 router.post(
@@ -70,5 +76,7 @@ router.post(
     reserveTicket
 );
 
+// Obtener un sorteo específico por ID
+router.get('/:raffleId', getRaffleById);
 
 export default router;
