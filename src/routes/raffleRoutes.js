@@ -18,7 +18,9 @@ import {
     registerTransferPaymentForTickets,
     getRafflesSummary,
     getPaymentsForRaffle,
-    getPaymentsDetails
+    getPaymentsDetails,
+    getReservedTicketsForRaffle,
+    releaseReservedTickets
 } from '../controllers/raffleController.js';
 
 const router = express.Router();
@@ -49,6 +51,12 @@ router.put('/tickets/pay/:raffleId/transaction', auth, registerTransferPaymentFo
 
 // Obtendrá todos los boletos para un sorteo específico
 router.get('/:raffleId/tickets', getTicketsByRaffleId);
+
+// Ver boletos apartados (Panel Admin)
+router.get('/admin/tickets/reserved/:raffleId', auth, isSorteador, getReservedTicketsForRaffle);
+
+// Liberar boletos apartados (Panel Admin)
+router.put('/admin/tickets/release/:raffleId', auth, isSorteador, releaseReservedTickets);
 
 
 
