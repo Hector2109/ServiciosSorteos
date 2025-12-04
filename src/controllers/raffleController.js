@@ -846,7 +846,40 @@ export const getPaymentsDetails = async (req, res) => {
 };
 
 
-// Obtener boletos apartados de un sorteo (Vista del Sorteador)
+// // Obtener boletos apartados de un sorteo (Vista del Sorteador)
+// export const getReservedTicketsForRaffle = async (req, res) => {
+//   const { raffleId } = req.params;
+
+//   try {
+//     const reservedTickets = await Ticket.findAll({
+//       where: {
+//         raffleId,
+//         estado: 'APARTADO'
+//       },
+//       include: [
+//         {
+//           model: User,
+//           as: 'user',
+//           attributes: ['nombre']
+//         },
+//         {
+//           model: Payment,
+//           as: 'payment',
+//           required: false,
+//           attributes: ['id', 'estado', 'tipo', 'monto']
+//         }
+//       ],
+//       order: [['numeroBoleto', 'ASC']]
+//     });
+
+//     res.status(200).json(reservedTickets);
+//   } catch (error) {
+//     console.error("Error al obtener boletos apartados:", error);
+//     res.status(500).json({ error: "Error interno al obtener los boletos apartados" });
+//   }
+// };
+
+// 1. Obtener boletos apartados de un sorteo (FILTRADOS)
 export const getReservedTicketsForRaffle = async (req, res) => {
   const { raffleId } = req.params;
 
@@ -854,7 +887,12 @@ export const getReservedTicketsForRaffle = async (req, res) => {
     const reservedTickets = await Ticket.findAll({
       where: {
         raffleId,
-        estado: 'APARTADO'
+        estado: 'APARTADO',
+        
+        [Op.or]: [
+          { paymentId: null }, 
+          { '$payment.estado$': { [Op.ne]: 'PENDIENTE' } }
+        ]
       },
       include: [
         {
@@ -865,7 +903,7 @@ export const getReservedTicketsForRaffle = async (req, res) => {
         {
           model: Payment,
           as: 'payment',
-          required: false,
+          required: false, // Necesario false para que el OR funcione con los nulos
           attributes: ['id', 'estado', 'tipo', 'monto']
         }
       ],
