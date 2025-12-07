@@ -441,7 +441,6 @@ export const updateRaffleData = async (raffleId, cleanData) => {
   }
 };
 
-
 export const setStateRaffle = async (raffleId, newState) => {
   try {
     const idToFind = parseInt(raffleId, 10);
@@ -499,7 +498,6 @@ export const getRafflesByParticipant = async (req, res) => {
   }
 };
 
-
 // Controlador para obtener los boletos de un usuario específico en un sorteo específico
 export const getTicketsForRaffleByUser = async (req, res) => {
   const userId = req.userId;
@@ -521,7 +519,6 @@ export const getTicketsForRaffleByUser = async (req, res) => {
     });
   }
 };
-
 
 // Controlador para obtener los boletos apartados de un usuario específico en un sorteo específico
 export const getApartedTicketsForRaffleByUser = async (req, res) => {
@@ -564,7 +561,6 @@ export const getApartedTicketsForRaffleByUser = async (req, res) => {
     });
   }
 };
-
 
 export const payApartedTicketsForRaffleByUserOnline = async (req, res) => {
   const userId = req.userId;
@@ -660,7 +656,6 @@ export const payApartedTicketsForRaffleByUserOnline = async (req, res) => {
   }
 };
 
-
 export const registerTransferPaymentForTickets = async (req, res) => {
   const userId = req.userId;
   const { raffleId } = req.params;
@@ -750,7 +745,6 @@ export const registerTransferPaymentForTickets = async (req, res) => {
   }
 };
 
-
 export const getPaymentsForRaffle = async (req, res) => {
   const userId = req.userId;
   const { raffleId } = req.params;
@@ -791,7 +785,6 @@ export const getPaymentsForRaffle = async (req, res) => {
     res.status(500).json({ error: "Error al obtener pagos." });
   }
 };
-
 
 export const getPaymentsDetails = async (req, res) => {
   const userId = req.userId;
@@ -845,7 +838,6 @@ export const getPaymentsDetails = async (req, res) => {
   }
 };
 
-
 // // Obtener boletos apartados de un sorteo (Vista del Sorteador)
 // export const getReservedTicketsForRaffle = async (req, res) => {
 //   const { raffleId } = req.params;
@@ -887,65 +879,78 @@ export const getReservedTicketsForRaffle = async (req, res) => {
     const reservedTickets = await Ticket.findAll({
       where: {
         raffleId,
-        estado: 'APARTADO',
-        
+        estado: "APARTADO",
+
         [Op.or]: [
-          { paymentId: null }, 
-          { '$payment.estado$': { [Op.ne]: 'PENDIENTE' } }
-        ]
+          { paymentId: null },
+          { "$payment.estado$": { [Op.ne]: "PENDIENTE" } },
+        ],
       },
       include: [
         {
           model: User,
-          as: 'user',
-          attributes: ['nombre']
+          as: "user",
+          attributes: ["nombre"],
         },
         {
           model: Payment,
-          as: 'payment',
+          as: "payment",
           required: false, // Necesario false para que el OR funcione con los nulos
-          attributes: ['id', 'estado', 'tipo', 'monto']
-        }
+          attributes: ["id", "estado", "tipo", "monto"],
+        },
       ],
-      order: [['numeroBoleto', 'ASC']]
+      order: [["numeroBoleto", "ASC"]],
     });
 
     res.status(200).json(reservedTickets);
   } catch (error) {
     console.error("Error al obtener boletos apartados:", error);
-    res.status(500).json({ error: "Error interno al obtener los boletos apartados" });
+    res
+      .status(500)
+      .json({ error: "Error interno al obtener los boletos apartados" });
   }
 };
-
 
 //Liberar boletos apartados
 export const releaseReservedTickets = async (req, res) => {
   const { raffleId } = req.params;
   const { numerosBoletos } = req.body;
 
-  if (!numerosBoletos || !Array.isArray(numerosBoletos) || numerosBoletos.length === 0) {
-    return res.status(400).json({ error: "Debes enviar una lista de números de boletos a liberar." });
+  if (
+    !numerosBoletos ||
+    !Array.isArray(numerosBoletos) ||
+    numerosBoletos.length === 0
+  ) {
+    return res
+      .status(400)
+      .json({
+        error: "Debes enviar una lista de números de boletos a liberar.",
+      });
   }
 
   const t = await sequelize.transaction();
 
   try {
-
     //Borrar boletos con estado apartado, destroy para eliminar el boleto de todo
     const deletedCount = await Ticket.destroy({
       where: {
         raffleId,
         numeroBoleto: {
-          [Op.in]: numerosBoletos
+          [Op.in]: numerosBoletos,
         },
-        estado: 'APARTADO' 
+        estado: "APARTADO",
       },
-      transaction: t
+      transaction: t,
     });
 
     if (deletedCount === 0) {
       await t.rollback();
-      return res.status(404).json({ message: "No se encontraron boletos apartados con esos números para liberar." });
+      return res
+        .status(404)
+        .json({
+          message:
+            "No se encontraron boletos apartados con esos números para liberar.",
+        });
     }
 
     await t.commit();
@@ -953,9 +958,8 @@ export const releaseReservedTickets = async (req, res) => {
     res.status(200).json({
       message: "Boletos liberados exitosamente.",
       cantidadLiberada: deletedCount,
-      numerosLiberados: numerosBoletos
+      numerosLiberados: numerosBoletos,
     });
-
   } catch (error) {
     await t.rollback();
     console.error("Error al liberar boletos:", error);
@@ -963,3 +967,84 @@ export const releaseReservedTickets = async (req, res) => {
   }
 };
 
+export const markPaymentTickets = async (req, res) => {
+  const { raffleId, paymentId } = req.params;
+
+  const { numerosBoletos } = req.body;
+
+  if (!Array.isArray(numerosBoletos) || numerosBoletos.length === 0) {
+    return res
+      .status(400)
+      .json({ error: "Debes especificar los tickets a marcar como pagados." });
+  }
+
+  // INICIAMOS LA TRANSACCIÓN
+  let t;
+
+  try {
+    t = await sequelize.transaction();
+
+    const [paymentUpdatedCount] = await Payment.update(
+      { estado: "COMPLETADO" },
+      {
+        where: { id: paymentId },
+        transaction: t,
+      }
+    );
+
+    if (paymentUpdatedCount === 0) {
+      await t.rollback(); // Cancelamos si no existe el pago
+      return res.status(404).json({ error: "El pago especificado no existe." });
+    }
+
+    const [ticketsUpdatedCount] = await Ticket.update(
+      {
+        estado: "COMPRADO",
+      },
+      {
+        where: {
+          raffleId: raffleId,
+          paymentId: paymentId, // Filtramos por el pago
+          numeroBoleto: numerosBoletos, // Filtro adicional de seguridad
+          estado: "APARTADO", // Solo si estaban apartados
+        },
+        transaction: t,
+      }
+    );
+
+    // Si no se actualizó ningún ticket, algo anda mal (quizás ya estaban pagados o no eran de ese pago)
+    if (ticketsUpdatedCount === 0) {
+      await t.rollback();
+      return res.status(404).json({
+        error:
+          "No se encontraron boletos apartados asociados a este pago y sorteo para actualizar.",
+      });
+    }
+
+    await t.commit();
+
+    res.status(200).json({
+      message:
+        "Pago completado y boletos marcados como comprados exitosamente.",
+      paymentUpdated: paymentUpdatedCount,
+      ticketsUpdated: ticketsUpdatedCount,
+      paymentId: paymentId,
+    });
+  } catch (error) {
+    if (t && !t.finished) {
+      try {
+        await t.rollback();
+      } catch (rollbackError) {
+        console.error("Error al hacer rollback:", rollbackError);
+      }
+    }
+
+    console.error("Error al procesar el pago:", error);
+    res
+      .status(500)
+      .json({
+        error: "Error interno al procesar el pago.",
+        details: error.message,
+      });
+  }
+};

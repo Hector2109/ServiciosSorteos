@@ -20,7 +20,8 @@ import {
     getPaymentsForRaffle,
     getPaymentsDetails,
     getReservedTicketsForRaffle,
-    releaseReservedTickets
+    releaseReservedTickets,
+    markPaymentTickets
 } from '../controllers/raffleController.js';
 
 const router = express.Router();
@@ -58,7 +59,8 @@ router.get('/admin/tickets/reserved/:raffleId', auth, isSorteador, getReservedTi
 // Liberar boletos apartados (Panel Admin)
 router.put('/admin/tickets/release/:raffleId', auth, isSorteador, releaseReservedTickets);
 
-
+// Marcar boletos como pagados (Panel Admin)
+router.put('/admin/tickets/mark-paid/:raffleId/payment/:paymentId', auth, isSorteador, markPaymentTickets);
 
 // Obtener sorteos inactivos
 router.get('/admin/inactive', getInnactiveRaffles, auth, isSorteador);
