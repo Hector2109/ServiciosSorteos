@@ -59,6 +59,9 @@ router.get('/admin/tickets/reserved/:raffleId', auth, isSorteador, getReservedTi
 // Liberar boletos apartados (Panel Admin)
 router.put('/admin/tickets/release/:raffleId', auth, isSorteador, releaseReservedTickets);
 
+// Liberar boletos apartados (Participante)
+router.put('/user/tickets/release/:raffleId', auth, releaseReservedTickets);
+
 // Marcar boletos como pagados (Panel Admin)
 router.put('/admin/tickets/mark-paid/:raffleId/payment/:paymentId', auth, isSorteador, markPaymentTickets);
 
